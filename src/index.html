@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⛵ Sailing Weather Router</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+    }
+
+    #header {
+      background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+      color: white;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    #header h1 {
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    #controls {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .control-group label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .control-group select,
+    .control-group input {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      background: white;
+      color: #333;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #45a049;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    #map {
+      height: calc(100vh - 200px);
+      border-radius: 4px;
+      margin: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    #footer {
+      background: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .weather-sources {
+      display: flex;
+      gap: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 4px;
+      margin: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      flex-wrap: wrap;
+    }
+
+    .source-card {
+      flex: 1;
+      min-width: 200px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      border-left: 4px solid #1976d2;
+    }
+
+    .source-card h4 {
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .source-card .data {
+      font-family: monospace;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .source-card.noaa { border-left-color: #2196f3; }
+    .source-card.openmeteo { border-left-color: #ff9800; }
+    .source-card.openweathermap { border-left-color: #9c27b0; }
+    .source-card.average { border-left-color: #4caf50; }
+
+    .source-card .status {
+      font-size: 12px;
+      margin-top: 8px;
+      padding: 5px 8px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+
+    .status.success { background: #e8f5e9; color: #2e7d32; }
+    .status.error { background: #ffebee; color: #c62828; }
+    .status.pending { background: #fff3e0; color: #e65100; }
+
+    #loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 9999;
+      display: none;
+      text-align: center;
+    }
+
+    #loading.active {
+      display: block;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1976d2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      #header { flex-direction: column; }
+      #controls { width: 100%; }
+      #map { height: calc(100vh - 250px); }
+      .weather-sources { flex-direction: column; }
+      .source-card { min-width: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <h1>⛵ Sailing Weather Router</h1>
+  <div id="controls">
+    <div class="control-group">
+      <label for="boatSelect">Boat:</label>
+      <select id="boatSelect">
+        <option value="">Loading boats...</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label for="startPoint">Start:</label>
+      <input type="text" id="startPoint" placeholder="Click on map or enter coords">
+    </div>
+    <div class="control-group">
+      <label for="endPoint">End:</label>
+      <input type="text" id="endPoint" placeholder="Click on map or enter coords">
+    </div>
+    <button id="calculateBtn" onclick="calculateRoute()">Calculate Route</button>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div class="weather-sources" id="weatherSources">
+  <div class="source-card noaa">
+    <h4>🌊 NOAA GFS</h4>
+    <div class="data" id="noaa-data">-</div>
+    <div class="status pending" id="noaa-status">Pending</div>
+  </div>
+  
+  <div class="source-card openmeteo">
+    <h4>🌍 Open-Meteo</h4>
+    <div class="data" id="openmeteo-data">-</div>
+    <div class="status pending" id="openmeteo-status">Pending</div>
+  </div>
+  
+  <div class="source-card openweathermap">
+    <h4>🌤️ OpenWeatherMap</h4>
+    <div class="data" id="openweathermap-data">-</div>
+    <div class="status pending" id="openweathermap-status">Pending</div>
+  </div>
+  
+  <div class="source-card average">
+    <h4>✅ Consensus</h4>
+    <div class="data" id="average-data">-</div>
+    <div class="status pending" id="average-status">Pending</div>
+  </div>
+</div>
+
+<div id="footer">
+  <span id="status">Ready</span>
+  <span id="info">Click on the map to select start/end points</span>
+</div>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>Calculating route...</p>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+<!-- API Modules -->
+<script src="../api/noaa-gfs.js"></script>
+<script src="../api/open-meteo.js"></script>
+<script src="../api/openweathermap.js"></script>
+<script src="../api/weather-aggregator.js"></script>
+
+<!-- Application Code -->
+<script src="config.js"></script>
+<script src="ui/boat-selector.js"></script>
+<script src="ui/map-controller.js"></script>
+<script src="ui/route-display.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

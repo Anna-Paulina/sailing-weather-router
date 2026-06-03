@@ -1,0 +1,39 @@
+{
+  "name": "sailing-weather-router",
+  "version": "0.1.0",
+  "description": "Advanced weather routing system for sailboats with multi-source wind data",
+  "main": "src/index.html",
+  "type": "module",
+  "scripts": {
+    "start": "http-server src -p 8080 -o",
+    "dev": "http-server src -p 8080 -c-1 -o",
+    "build": "echo 'Build script coming soon'",
+    "test": "echo 'Tests coming soon' && exit 0",
+    "docs": "echo 'Documentation server coming soon'"
+  },
+  "keywords": [
+    "sailing",
+    "weather",
+    "routing",
+    "maritime",
+    "wind",
+    "forecast",
+    "navigation"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "papaparse": "^5.4.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/sailing-weather-router.git"
+  }
+}
