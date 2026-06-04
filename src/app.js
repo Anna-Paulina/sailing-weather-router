@@ -2,10 +2,38 @@
  * Sailing Weather Router - Main Application
  */
 
+// ========================
+// INITIALIZATION (Single point)
+// ========================
+
+async function initializeApp() {
+  console.log('⛵ Sailing Weather Router v0.1.0');
+  console.log('🌍 Multi-source weather routing system\n');
+
+  // Step 1: Initialize weather APIs
+  console.log('🌊 Initializing weather APIs...');
+  await initializeWeatherAPIs();
+
+  // Step 2: Initialize map
+  console.log('🗺️ Initializing map...');
+  initializeMap();
+
+  // Step 3: Initialize boat selector
+  console.log('🚢 Initializing boat selector...');
+  await initBoatSelector();
+
+  // Done!
+  console.log('\n✅ Application ready!\n');
+  updateStatus('Ready - Select a boat and click two points on the map');
+}
+
+// ========================
+// ROUTE CALCULATION
+// ========================
+
 async function calculateRoute() {
   console.log('\n🚀 Starting route calculation...\n');
 
-  // Validate inputs
   const boat = getSelectedBoat();
   const start = getStartPoint();
   const end = getEndPoint();
@@ -24,22 +52,16 @@ async function calculateRoute() {
   updateStatus('Calculating route with weather data...');
 
   try {
-    // Step 1: Get weather data from all sources
     console.log('\n📡 STEP 1: Fetching weather data from all sources...\n');
     const weatherResults = await weatherApis.aggregator.getConsensusWind(start.lat, start.lng);
-
-    // Display weather results
     displayWeatherResults(weatherResults);
 
-    // Step 2: Get forecast
     console.log('\n📊 STEP 2: Fetching forecast...\n');
     const forecastResults = await weatherApis.aggregator.getConsensusForecast(start.lat, start.lng, 7);
 
-    // Step 3: Calculate optimal route (placeholder)
     console.log('\n🛣️ STEP 3: Calculating optimal route...\n');
     const route = calculateOptimalRoute(start, end, boat, weatherResults.consensus);
 
-    // Step 4: Display route
     console.log('\n📍 STEP 4: Displaying route...\n');
     displayRoute(route);
 
@@ -56,16 +78,6 @@ async function calculateRoute() {
 }
 
 function calculateOptimalRoute(start, end, boat, consensus) {
-  /**
-   * TODO: Implement A* pathfinding with:
-   * - Wind-optimized cost function
-   * - Boat performance polars
-   * - Bathymetry constraints
-   * - Safety margins
-   *
-   * For now, return simple line
-   */
-
   const points = [];
   const steps = 20;
 
@@ -79,29 +91,24 @@ function calculateOptimalRoute(start, end, boat, consensus) {
   return points;
 }
 
-/**
- * Initialize application on page load
- */
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('⛵ Sailing Weather Router v0.1.0');
-  console.log('🌍 Multi-source weather routing system\n');
+// ========================
+// START APPLICATION WHEN EVERYTHING IS READY
+// ========================
 
-  // All modules initialize themselves on DOMContentLoaded
-  // Check that everything is ready
-  setTimeout(() => {
-    console.log('\n✅ Application ready!\n');
-    updateStatus('Ready - Select a boat and click two points on the map');
-  }, 1000);
-});
+// Remove DOMContentLoaded listeners from other files
+// and call initializeApp here
 
-/**
- * Keyboard shortcuts
- */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+  initializeApp();
+}
+
+// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     clearPoints();
   }
-
   if (e.key === 'Enter' && getSelectedBoat() && getStartPoint() && getEndPoint()) {
     calculateRoute();
   }
