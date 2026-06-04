@@ -87,14 +87,21 @@ async function loadBoatProfiles() {
 
   for (const file of boatFiles) {
     try {
-      const response = await fetch(`../../boats/${file}`);
+      const response = await fetch(`../boats/${file}`);
       if (response.ok) {
         const boat = await response.json();
         boats.push(boat);
+        console.log(`✅ Loaded boat: ${boat.name}`);
+      } else {
+        console.warn(`⚠️ Could not load ${file}: HTTP ${response.status}`);
       }
     } catch (error) {
-      console.warn(`Could not load boat profile: ${file}`, error);
+      console.warn(`❌ Could not load boat profile: ${file}`, error);
     }
+  }
+
+  if (boats.length === 0) {
+    console.error('❌ No boat profiles loaded! Check boat file paths.');
   }
 
   return boats;
