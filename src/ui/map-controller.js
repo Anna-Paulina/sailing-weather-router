@@ -134,6 +134,3 @@ function fitBounds() {
     map.fitBounds(bounds, { padding: [50, 50] });
   }
 }
-
-// Initialize map when page loads
-document.addEventListener('DOMContentLoaded', initializeMap);
