@@ -1,30 +1,36 @@
 /**
  * Sailing Weather Router - Main Application
+ * SINGLE INITIALIZATION POINT
  */
 
 // ========================
-// INITIALIZATION (Single point)
+// INITIALIZATION (Only place things initialize!)
 // ========================
 
 async function initializeApp() {
   console.log('⛵ Sailing Weather Router v0.1.0');
   console.log('🌍 Multi-source weather routing system\n');
 
-  // Step 1: Initialize weather APIs
-  console.log('🌊 Initializing weather APIs...');
-  await initializeWeatherAPIs();
+  try {
+    // Step 1: Initialize weather APIs (from config.js)
+    console.log('🌊 Initializing weather APIs...');
+    await initializeWeatherAPIs();
 
-  // Step 2: Initialize map
-  console.log('🗺️ Initializing map...');
-  initializeMap();
+    // Step 2: Initialize map (from map-controller.js)
+    console.log('🗺️ Initializing map...');
+    initializeMap();
 
-  // Step 3: Initialize boat selector
-  console.log('🚢 Initializing boat selector...');
-  await initBoatSelector();
+    // Step 3: Initialize boat selector (from boat-selector.js)
+    console.log('🚢 Initializing boat selector...');
+    const boatProfiles = await loadBoatProfiles();
+    initializeBoatSelector(boatProfiles);
 
-  // Done!
-  console.log('\n✅ Application ready!\n');
-  updateStatus('Ready - Select a boat and click two points on the map');
+    console.log('\n✅ Application ready!\n');
+    updateStatus('Ready - Select a boat and click two points on the map');
+
+  } catch (error) {
+    console.error('❌ Initialization error:', error);
+  }
 }
 
 // ========================
@@ -92,11 +98,8 @@ function calculateOptimalRoute(start, end, boat, consensus) {
 }
 
 // ========================
-// START APPLICATION WHEN EVERYTHING IS READY
+// START APPLICATION WHEN DOM IS READY
 // ========================
-
-// Remove DOMContentLoaded listeners from other files
-// and call initializeApp here
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeApp);
@@ -104,11 +107,15 @@ if (document.readyState === 'loading') {
   initializeApp();
 }
 
-// Keyboard shortcuts
+// ========================
+// KEYBOARD SHORTCUTS
+// ========================
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     clearPoints();
   }
+
   if (e.key === 'Enter' && getSelectedBoat() && getStartPoint() && getEndPoint()) {
     calculateRoute();
   }
