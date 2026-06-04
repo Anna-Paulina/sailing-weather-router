@@ -59,6 +59,3 @@ function showBoatSpecs() {
 function getSelectedBoat() {
   return selectedBoat;
 }
-
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', initBoatSelector);
