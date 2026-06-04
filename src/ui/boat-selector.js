@@ -6,11 +6,10 @@
 let selectedBoat = null;
 let boatProfiles = [];
 
-async function initBoatSelector() {
+function initializeBoatSelector(boats) {
   console.log('🚢 Initializing Boat Selector...');
 
-  // Load boat profiles
-  boatProfiles = await loadBoatProfiles();
+  boatProfiles = boats;
   console.log(`Found ${boatProfiles.length} boat profiles`);
 
   const select = document.getElementById('boatSelect');
@@ -34,8 +33,6 @@ function selectBoat(boatId) {
   if (selectedBoat) {
     console.log(`⛵ Selected boat: ${selectedBoat.name}`);
     document.getElementById('status').textContent = `Boat: ${selectedBoat.name}`;
-
-    // Display boat specs
     showBoatSpecs();
   } else {
     selectedBoat = null;
