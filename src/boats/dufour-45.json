@@ -1,0 +1,89 @@
+{
+  "id": "dufour-45",
+  "name": "Dufour 45 Classic",
+  "type": "cruiser",
+  "year": 2010,
+  
+  "specs": {
+    "loa": 13.65,
+    "beam": 4.3,
+    "draft": 1.95,
+    "displacement": 12800,
+    "ballast": 5000,
+    "sailArea": 88.5
+  },
+  
+  "performance": {
+    "maxHull": 12.5,
+    "maxWind": 35,
+    "minWind": 3,
+    "motorsSpeed": 9
+  },
+  
+  "polars": {
+    "comment": "Polar performance: wind speed (knots) -> speeds by angle (degrees true)",
+    "5": {
+      "0": 0.0,
+      "45": 2.8,
+      "90": 5.2,
+      "135": 5.8,
+      "180": 4.5
+    },
+    "10": {
+      "0": 0.0,
+      "45": 4.5,
+      "90": 7.2,
+      "135": 8.1,
+      "180": 7.5
+    },
+    "15": {
+      "0": 0.0,
+      "45": 5.8,
+      "90": 8.5,
+      "135": 9.2,
+      "180": 8.8
+    },
+    "20": {
+      "0": 0.0,
+      "45": 6.8,
+      "90": 9.5,
+      "135": 10.1,
+      "180": 9.8
+    },
+    "25": {
+      "0": 0.0,
+      "45": 7.5,
+      "90": 10.2,
+      "135": 10.8,
+      "180": 10.5
+    },
+    "30": {
+      "0": 0.0,
+      "45": 8.0,
+      "90": 10.8,
+      "135": 11.2,
+      "180": 11.0
+    },
+    "35": {
+      "0": 0.0,
+      "45": 8.2,
+      "90": 11.0,
+      "135": 11.4,
+      "180": 11.2
+    }
+  },
+  
+  "safety": {
+    "minDepthMargin": 0.5,
+    "maxPitchAngle": 25,
+    "maxHullStress": 35
+  },
+  
+  "comfort": {
+    "maxAcceptableHeeling": 25,
+    "maxWaveHeight": 4.0
+  },
+  
+  "notes": "Typical cruising sailboat. Good upwind performance. Comfortable cruising up to 25 knots wind.",
+  "source": "Manufacturer specifications + typical performance data"
+}

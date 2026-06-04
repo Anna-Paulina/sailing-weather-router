@@ -1,0 +1,89 @@
+{
+  "id": "beneteau-first-40",
+  "name": "Beneteau First 40.7",
+  "type": "racing-cruiser",
+  "year": 2015,
+  
+  "specs": {
+    "loa": 12.55,
+    "beam": 4.0,
+    "draft": 2.1,
+    "displacement": 8900,
+    "ballast": 3600,
+    "sailArea": 85
+  },
+  
+  "performance": {
+    "maxHull": 14.0,
+    "maxWind": 32,
+    "minWind": 2.5,
+    "motorsSpeed": 9
+  },
+  
+  "polars": {
+    "comment": "Higher performance than cruiser - better upwind, faster overall",
+    "5": {
+      "0": 0.0,
+      "45": 3.2,
+      "90": 5.8,
+      "135": 6.2,
+      "180": 4.8
+    },
+    "10": {
+      "0": 0.0,
+      "45": 5.2,
+      "90": 8.5,
+      "135": 9.2,
+      "180": 8.8
+    },
+    "15": {
+      "0": 0.0,
+      "45": 6.8,
+      "90": 10.2,
+      "135": 11.0,
+      "180": 10.5
+    },
+    "20": {
+      "0": 0.0,
+      "45": 8.2,
+      "90": 11.8,
+      "135": 12.5,
+      "180": 12.0
+    },
+    "25": {
+      "0": 0.0,
+      "45": 9.2,
+      "90": 13.0,
+      "135": 13.8,
+      "180": 13.2
+    },
+    "30": {
+      "0": 0.0,
+      "45": 9.8,
+      "90": 13.8,
+      "135": 14.2,
+      "180": 13.8
+    },
+    "32": {
+      "0": 0.0,
+      "45": 10.0,
+      "90": 14.0,
+      "135": 14.0,
+      "180": 14.0
+    }
+  },
+  
+  "safety": {
+    "minDepthMargin": 0.6,
+    "maxPitchAngle": 22,
+    "maxHullStress": 32
+  },
+  
+  "comfort": {
+    "maxAcceptableHeeling": 20,
+    "maxWaveHeight": 3.5
+  },
+  
+  "notes": "Racing-oriented cruiser with excellent performance. Designed for fast passage making.",
+  "source": "Manufacturer + racing data"
+}
