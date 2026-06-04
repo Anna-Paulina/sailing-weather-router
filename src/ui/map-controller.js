@@ -1,6 +1,7 @@
 /**
  * Map Controller Module
  * Manages Leaflet map and user interactions
+ * NO DOMContentLoaded - initialized by app.js
  */
 
 let map = null;
@@ -12,6 +13,11 @@ let endPoint = null;
 function initializeMap() {
   console.log('🗺️ Initializing Map...');
 
+  if (!CONFIG) {
+    console.error('❌ CONFIG not defined!');
+    return;
+  }
+
   map = L.map('map').setView([CONFIG.DEFAULT_LAT, CONFIG.DEFAULT_LNG], CONFIG.DEFAULT_ZOOM);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -19,7 +25,6 @@ function initializeMap() {
     maxZoom: 19
   }).addTo(map);
 
-  // Map click handler
   map.on('click', (e) => {
     handleMapClick(e.latlng);
   });
@@ -33,7 +38,6 @@ function handleMapClick(latlng) {
   } else if (!endPoint) {
     setEndPoint(latlng);
   } else {
-    // Reset and start over
     clearPoints();
     setStartPoint(latlng);
   }
