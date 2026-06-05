@@ -1,133 +1,112 @@
 /**
- * Sailing Weather Router - Main Application
- * SINGLE INITIALIZATION POINT
+ * Sailing Weather Router v3 - Vector-Based Professional Routing
+ * Uses vector mathematics for optimal heading calculation
  */
 
-// ========================
-// INITIALIZATION
-// ========================
-
 async function initializeApp() {
-  console.log('⛵ Sailing Weather Router v0.1.0');
-  console.log('🌍 Multi-source weather routing system\n');
+  console.log('⛵ Sailing Weather Router v3.0');
+  console.log('🧮 Vector-Based Professional Routing\n');
 
   try {
-    // Step 1: Initialize weather APIs
     console.log('🌊 Initializing weather APIs...');
     await initializeWeatherAPIs();
 
-    // Step 2: Initialize map
     console.log('🗺️ Initializing map...');
     initializeMap();
 
-    // Step 3: Initialize boat selector
     console.log('🚢 Initializing boat selector...');
     const boatProfiles = await loadBoatProfiles();
     initializeBoatSelector(boatProfiles);
 
     console.log('\n✅ Application ready!\n');
-    updateStatus('Ready - Select a boat and click two points on the map');
+    updateStatus('Ready - Vector-based routing engine loaded');
 
   } catch (error) {
     console.error('❌ Initialization error:', error);
   }
 }
 
-// ========================
-// ROUTE CALCULATION (NEW!)
-// ========================
-
 async function calculateRoute() {
-  console.log('\n🚀 Starting intelligent route calculation...\n');
+  console.log('\n' + '='.repeat(70));
+  console.log('🧮 VECTOR-BASED ROUTE CALCULATION');
+  console.log('='.repeat(70) + '\n');
 
   const boat = getSelectedBoat();
   const start = getStartPoint();
   const end = getEndPoint();
 
   if (!boat) {
-    alert('Please select a boat first');
+    alert('Please select a boat');
     return;
   }
 
   if (!start || !end) {
-    alert('Please set both start and end points on the map');
+    alert('Please set start and end points');
     return;
   }
 
   showLoadingIndicator(true);
-  updateStatus('🌬️ Fetching weather data and calculating optimal route...');
+  updateStatus('🧮 Calculating vector-optimized route...');
 
   try {
-    // Step 1: Get weather forecast for the entire route
-    console.log('\n📡 STEP 1: Fetching 7-day forecast...\n');
+    // Get weather forecast
+    console.log('📡 Fetching 7-day forecast...\n');
+    
     const forecastResults = await weatherApis.aggregator.getConsensusForecast(
-      start.lat, 
-      start.lng, 
+      start.lat,
+      start.lng,
       7
     );
 
-    if (!forecastResults.success || !forecastResults.data || forecastResults.data.length === 0) {
-      throw new Error('Could not fetch forecast data');
+    if (!forecastResults.data || forecastResults.data.length === 0) {
+      throw new Error('No forecast data available');
     }
 
-    console.log(`✅ Got ${forecastResults.data.length} hours of forecast data`);
-    displayWeatherResults({ sources: {}, average: null, consensus: null });
+    console.log(`✅ Got ${forecastResults.data.length} hours of forecast\n`);
 
-    // Step 2: Initialize routing engine
-    console.log('\n🛣️ STEP 2: Initializing routing engine...\n');
-    const router = new RoutingEngine(boat, forecastResults.data);
+    // Initialize vector-based routing engine
+    console.log('🚀 Initializing Vector-Based Routing Engine v3\n');
+    
+    const router = new RoutingEngineV3(boat, forecastResults.data);
 
-    // Step 3: Calculate optimal route
-    console.log('\n⛵ STEP 3: Calculating wind-optimized route...\n');
-    const route = await router.calculateRoute(
+    // Calculate route (hour-by-hour with vector optimization)
+    const routeResult = await router.calculateRoute(
       start.lat,
       start.lng,
       end.lat,
       end.lng
     );
 
-    if (!route || route.length === 0) {
-      throw new Error('Could not calculate route');
-    }
+    // Get segments
+    const segments = router.getRouteSegments(routeResult.route);
 
-    // Step 4: Get route segments with styles
-    console.log('\n🎨 STEP 4: Styling route by confidence level...\n');
-    const segments = router.getRouteSegments(route);
+    // Display
+    console.log('🎨 Displaying route...\n');
+    displayVectorRoute(segments, routeResult.waypoints);
 
-    // Step 5: Display route
-    console.log('\n📍 STEP 5: Displaying route on map...\n');
-    displayOptimizedRoute(segments);
-
-    // Step 6: Calculate statistics
-    const totalDistance = calculateRouteDistance(route);
-    const totalHours = route[route.length - 1].hour;
-    const totalDays = Math.ceil(totalHours / 24);
-    const avgSpeed = totalDistance / totalHours;
-
-    updateStatus('✅ Route calculated successfully');
+    // Show stats
+    updateStatus('✅ Vector-optimized route complete');
     updateInfo(`
-      📏 Distance: ${totalDistance.toFixed(1)} nm | 
-      ⏱️ Duration: ${totalDays} days (${totalHours} hours) | 
-      🚤 Avg Speed: ${avgSpeed.toFixed(1)} kt
+      <b>Duration:</b> ${routeResult.stats.hours}h (${routeResult.stats.days}d) | 
+      <b>Distance:</b> ${routeResult.stats.distance}nm | 
+      <b>Speed:</b> ${routeResult.stats.avgSpeed}kt | 
+      <b>Waypoints:</b> ${routeResult.waypoints.length}
     `);
 
     showLoadingIndicator(false);
     fitBounds();
+    displayWaypointDetails(routeResult.waypoints);
 
   } catch (error) {
-    console.error('❌ Route calculation error:', error);
-    updateStatus(`❌ Error: ${error.message}`);
+    console.error('❌ Error:', error);
+    updateStatus(`❌ ${error.message}`);
     showLoadingIndicator(false);
   }
 }
 
-/**
- * Display route with different styles based on confidence
- */
-function displayOptimizedRoute(segments) {
-  console.log(`\n📍 Displaying ${segments.length} route segments...\n`);
-
-  segments.forEach((segment, idx) => {
+function displayVectorRoute(segments, waypoints) {
+  // Display route segments
+  segments.forEach((segment) => {
     let styleOptions;
 
     switch(segment.style) {
@@ -136,100 +115,146 @@ function displayOptimizedRoute(segments) {
           color: '#2196f3',
           weight: 4,
           opacity: 0.9,
-          dashArray: null,
-          className: 'route-solid'
+          dashArray: null
         };
-        console.log(`  Days 0-3 (solid): ${segment.points.length} points`);
         break;
       case 'longdash':
         styleOptions = {
           color: '#ff9800',
           weight: 3,
           opacity: 0.7,
-          dashArray: '15,10',
-          className: 'route-longdash'
+          dashArray: '15,10'
         };
-        console.log(`  Days 3-6 (long dash): ${segment.points.length} points`);
         break;
       case 'shortdash':
         styleOptions = {
           color: '#f44336',
           weight: 3,
           opacity: 0.6,
-          dashArray: '5,5',
-          className: 'route-shortdash'
+          dashArray: '5,5'
         };
-        console.log(`  Days 6+ (short dash): ${segment.points.length} points`);
         break;
     }
 
     addRouteToMap(segment.points, styleOptions);
   });
 
-  // Add legend
+  // Add waypoints
+  addWaypointsToMap(waypoints);
+
+  // Show legend
   showRouteLegend();
 }
 
-/**
- * Show legend for route confidence
- */
+function addWaypointsToMap(waypoints) {
+  waypoints.forEach((wp) => {
+    let color, icon;
+
+    if (wp.type === 'start') {
+      color = '#4caf50';
+      icon = '🚀';
+    } else if (wp.type === 'end') {
+      color = '#f44336';
+      icon = '🎯';
+    } else if (wp.type === 'daily') {
+      color = '#2196f3';
+      icon = '📍';
+    } else {
+      color = '#ff9800';
+      icon = '•';
+    }
+
+    const marker = L.marker([wp.lat, wp.lng], {
+      icon: L.divIcon({
+        html: `<div style="
+          background: ${color};
+          color: white;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        ">${icon}</div>`,
+        iconSize: [32, 32]
+      })
+    }).addTo(map);
+
+    marker.bindPopup(`<b>${wp.label}</b>`);
+  });
+}
+
+function displayWaypointDetails(waypoints) {
+  const container = document.createElement('div');
+  container.style.cssText = `
+    position: fixed;
+    right: 15px;
+    bottom: 250px;
+    width: 300px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    font-size: 12px;
+  `;
+
+  let html = '<b>📍 Waypoints</b><hr>';
+
+  waypoints.forEach((wp) => {
+    const bgColor = wp.type === 'start' ? '#e8f5e9' :
+                   wp.type === 'end' ? '#ffebee' : '#e3f2fd';
+
+    html += `
+      <div style="background: ${bgColor}; padding: 8px; margin: 5px 0; border-radius: 4px;">
+        <b>${wp.label}</b>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  document.body.appendChild(container);
+}
+
 function showRouteLegend() {
   const legend = document.createElement('div');
   legend.innerHTML = `
-    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 13px;">
-      <b>Route Confidence</b><br>
-      <svg width="30" height="3" style="display: inline-block; margin-right: 8px;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#2196f3" stroke-width="3"/></svg>
-      <span>Days 0-3 (95%)</span><br>
-      <svg width="30" height="3" style="display: inline-block; margin-right: 8px; margin-top: 4px;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#ff9800" stroke-width="2" stroke-dasharray="5,3"/></svg>
-      <span>Days 3-6 (70%)</span><br>
-      <svg width="30" height="3" style="display: inline-block; margin-right: 8px; margin-top: 4px;"><line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#f44336" stroke-width="2" stroke-dasharray="2,2"/></svg>
-      <span>Days 6+ (40%)</span>
+    <div style="background: white; padding: 15px; border-radius: 8px; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 13px;">
+      <b>🧮 Vector-Optimized Route</b><br><br>
+      <svg width="40" height="3" style="margin-right: 8px;"><line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#2196f3" stroke-width="4"/></svg>
+      Days 0-3 (95%)<br><br>
+      <svg width="40" height="3" style="margin-right: 8px;"><line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#ff9800" stroke-width="3" stroke-dasharray="8,5"/></svg>
+      Days 3-6 (70%)<br><br>
+      <svg width="40" height="3" style="margin-right: 8px;"><line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#f44336" stroke-width="3" stroke-dasharray="3,3"/></svg>
+      Days 6+ (40%)<br><br>
+      See console for vector calculations
     </div>
   `;
 
-  const legendControl = L.control({ position: 'bottomright' });
-  legendControl.onAdd = function() {
+  const control = L.control({ position: 'bottomright' });
+  control.onAdd = function() {
     const div = L.DomUtil.create('div');
     div.appendChild(legend);
     return div;
   };
-  legendControl.addTo(map);
+  control.addTo(map);
 }
 
-/**
- * Calculate total distance of route
- */
-function calculateRouteDistance(route) {
-  let distance = 0;
-  for (let i = 0; i < route.length - 1; i++) {
-    const d = Math.sqrt(
-      Math.pow(route[i+1].lat - route[i].lat, 2) +
-      Math.pow(route[i+1].lng - route[i].lng, 2)
-    );
-    distance += d * 60; // Convert degrees to nautical miles
-  }
-  return distance;
-}
-
-// ========================
-// START APPLICATION
-// ========================
-
+// Start app
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
   initializeApp();
 }
 
-// ========================
-// KEYBOARD SHORTCUTS
-// ========================
-
+// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    clearPoints();
-  }
-
+  if (e.key === 'Escape') clearPoints();
   if (e.key === 'Enter' && getSelectedBoat() && getStartPoint() && getEndPoint()) {
     calculateRoute();
   }
