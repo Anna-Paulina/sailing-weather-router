@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>⛵ Sailing Weather Router</title>
   
+  <!-- FIX #4: Add favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⛵</text></svg>">
+  
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     * {
@@ -271,10 +274,10 @@
 <script src="api/openweathermap.js"></script>
 <script src="api/weather-aggregator.js"></script>
 
-<!-- Vector Mathematics (used internally by routing-engine) -->
+<!-- FIX #3: Vector Mathematics (before routing-engine) -->
 <script src="routing/vector-math.js"></script>
 
-<!-- Routing Engine (vectorized internally) -->
+<!-- Routing Engine -->
 <script src="routing/routing-engine.js"></script>
 
 <!-- UI Components -->
