@@ -51,6 +51,7 @@
     .control-group label {
       font-size: 14px;
       font-weight: 500;
+      color: white;
     }
 
     .control-group select,
@@ -209,11 +210,11 @@
     </div>
     <div class="control-group">
       <label for="startPoint">Start:</label>
-      <input type="text" id="startPoint" placeholder="Click on map or enter coords">
+      <input type="text" id="startPoint" placeholder="Click on map">
     </div>
     <div class="control-group">
       <label for="endPoint">End:</label>
-      <input type="text" id="endPoint" placeholder="Click on map or enter coords">
+      <input type="text" id="endPoint" placeholder="Click on map">
     </div>
     <button id="calculateBtn" onclick="calculateRoute()">Calculate Route</button>
   </div>
@@ -249,7 +250,7 @@
 
 <div id="footer">
   <span id="status">Ready</span>
-  <span id="info">Click on the map to select start/end points</span>
+  <span id="info">Click on map to select points</span>
 </div>
 
 <div id="loading">
@@ -257,11 +258,11 @@
   <p>Calculating route...</p>
 </div>
 
-<!-- Scripts -->
+<!-- Libraries -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-<!-- Configuration FIRST! -->
+<!-- Configuration FIRST -->
 <script src="config.js"></script>
 
 <!-- API Modules -->
@@ -270,7 +271,10 @@
 <script src="api/openweathermap.js"></script>
 <script src="api/weather-aggregator.js"></script>
 
-<!-- Routing Engine (NEW!) -->
+<!-- Vector Mathematics (used internally by routing-engine) -->
+<script src="routing/vector-math.js"></script>
+
+<!-- Routing Engine (vectorized internally) -->
 <script src="routing/routing-engine.js"></script>
 
 <!-- UI Components -->
@@ -278,7 +282,7 @@
 <script src="ui/map-controller.js"></script>
 <script src="ui/route-display.js"></script>
 
-<!-- Main App (with intelligent routing) -->
+<!-- Main App -->
 <script src="app.js"></script>
 
 </body>
