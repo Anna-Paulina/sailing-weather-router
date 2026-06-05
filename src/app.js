@@ -58,7 +58,7 @@ async function calculateRoute() {
       7
     );
 
-    if (!forecastResults.data || forecastResults.data.length === 0) {
+    if (!forecastResults.consensus || forecastResults.consensus.length === 0) {
       throw new Error('No forecast data available');
     }
 
@@ -67,7 +67,7 @@ async function calculateRoute() {
     // Initialize vector-based routing engine
     console.log('🚀 Initializing Vector-Based Routing Engine v3\n');
     
-    const router = new RoutingEngineV3(boat, forecastResults.data);
+    const router = new RoutingEngine(boat, forecastResults.consensus);
 
     // Calculate route (hour-by-hour with vector optimization)
     const routeResult = await router.calculateRoute(
