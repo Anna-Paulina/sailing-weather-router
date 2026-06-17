@@ -1,11 +1,10 @@
 /**
- * Sailing Weather Router - Main Application
- * FIXED VERSION
+ * Sailing Weather Router - With Wind Visualization
  */
 
 async function initializeApp() {
-  console.log('⛵ Sailing Weather Router');
-  console.log('🌍 Vector-Based Professional Routing\n');
+  console.log('⛵ Sailing Weather Router - Isochrone Edition');
+  console.log('🌍 Professional spherical Earth routing\n');
 
   try {
     console.log('🌊 Initializing weather APIs...');
@@ -19,7 +18,7 @@ async function initializeApp() {
     initializeBoatSelector(boatProfiles);
 
     console.log('\n✅ Application ready!\n');
-    updateStatus('Ready - Select a boat and click two points on the map');
+    updateStatus('Ready - Select boat and click points');
 
   } catch (error) {
     console.error('❌ Initialization error:', error);
@@ -28,7 +27,7 @@ async function initializeApp() {
 
 async function calculateRoute() {
   console.log('\n' + '='.repeat(70));
-  console.log('🌊 ROUTE CALCULATION');
+  console.log('🌊 ROUTE CALCULATION - ISOCHRONE METHOD');
   console.log('='.repeat(70) + '\n');
 
   const boat = getSelectedBoat();
@@ -36,40 +35,38 @@ async function calculateRoute() {
   const end = getEndPoint();
 
   if (!boat) {
-    alert('Please select a boat first');
+    alert('Please select a boat');
     return;
   }
 
   if (!start || !end) {
-    alert('Please set both start and end points on the map');
+    alert('Please set start and end points');
     return;
   }
 
   showLoadingIndicator(true);
-  updateStatus('🌬️ Fetching weather and calculating route...');
+  updateStatus('🌬️ Calculating optimal route...');
 
   try {
-    console.log('📡 STEP 1: Fetching 7-day forecast\n');
+    console.log('📡 Fetching 7-day forecast...\n');
     
     const forecastResults = await weatherApis.aggregator.getConsensusForecast(
-      start.lat, 
-      start.lng, 
+      start.lat,
+      start.lng,
       7
     );
 
-    // FIX #2: Check for 'consensus' not 'data'
     if (!forecastResults.consensus || forecastResults.consensus.length === 0) {
       throw new Error('Could not fetch forecast data');
     }
 
-    console.log(`✅ Got ${forecastResults.consensus.length} hours of forecast\n`);
+    console.log(`✅ Got ${forecastResults.consensus.length} hours\n`);
 
-    console.log('🚀 STEP 2: Initializing Routing Engine\n');
+    console.log('🚀 Initializing Isochrone Routing Engine\n');
     
-    // FIX #1: Use RoutingEngine (not RoutingEngineV3)
     const router = new RoutingEngine(boat, forecastResults.consensus);
 
-    console.log('⛵ STEP 3: Calculating route (hour-by-hour)\n');
+    console.log('⛵ Calculating route with spherical Earth...\n');
     
     const routeResult = await router.calculateRoute(
       start.lat,
@@ -78,15 +75,15 @@ async function calculateRoute() {
       end.lng
     );
 
-    console.log('\n🎨 STEP 4: Processing route segments\n');
-    
     const segments = router.getRouteSegments(routeResult.route);
+    const windVectors = router.getWindVectors(routeResult.route, 12);
 
-    console.log('📍 STEP 5: Displaying route\n');
+    console.log('📍 Displaying route and winds\n');
     
-    displayRoute(segments, routeResult.waypoints);
+    displayRoute(segments);
+    displayWinds(windVectors);
 
-    updateStatus('✅ Route calculated successfully');
+    updateStatus('✅ Route calculated');
     updateInfo(`
       <b>Duration:</b> ${routeResult.stats.hours}h (${routeResult.stats.days}d) | 
       <b>Distance:</b> ${routeResult.stats.distance}nm | 
@@ -97,13 +94,16 @@ async function calculateRoute() {
     fitBounds();
 
   } catch (error) {
-    console.error('❌ Route calculation error:', error);
-    updateStatus(`❌ Error: ${error.message}`);
+    console.error('❌ Error:', error);
+    updateStatus(`❌ ${error.message}`);
     showLoadingIndicator(false);
   }
 }
 
-function displayRoute(segments, waypoints) {
+/**
+ * Display route with confidence levels
+ */
+function displayRoute(segments) {
   segments.forEach((segment) => {
     let styleOptions;
 
@@ -140,18 +140,59 @@ function displayRoute(segments, waypoints) {
   showRouteLegend();
 }
 
+/**
+ * Display winds as arrows on map
+ */
+function displayWinds(windVectors) {
+  console.log(`🌬️ Displaying ${windVectors.length} wind indicators\n`);
+
+  windVectors.forEach((wind, idx) => {
+    // Create arrow icon pointing in wind direction
+    const arrowIcon = L.divIcon({
+      html: `
+        <div style="
+          transform: rotate(${wind.direction}deg);
+          font-size: 20px;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        ">
+          ➤
+        </div>
+      `,
+      iconSize: [20, 20],
+      className: 'wind-marker'
+    });
+
+    const marker = L.marker([wind.lat, wind.lng], {
+      icon: arrowIcon,
+      title: `Wind: ${wind.speed.toFixed(1)}kt @ ${wind.direction.toFixed(0)}°`
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <b>Wind</b><br>
+      Speed: ${wind.speed.toFixed(1)} kt<br>
+      Direction: ${wind.direction.toFixed(0)}°<br>
+      Hour: ${wind.hour}
+    `);
+  });
+}
+
+/**
+ * Show legend
+ */
 function showRouteLegend() {
   const legend = document.createElement('div');
   legend.innerHTML = `
     <div style="background: white; padding: 15px; border-radius: 8px; 
                 box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 13px;">
-      <b>🎯 Route Confidence</b><br><br>
+      <b>🎯 Isochrone Route</b><br><br>
       <svg width="40" height="3" style="margin-right: 8px;"><line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#2196f3" stroke-width="4"/></svg>
       Days 0-3 (95%)<br><br>
       <svg width="40" height="3" style="margin-right: 8px;"><line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#ff9800" stroke-width="3" stroke-dasharray="8,5"/></svg>
       Days 3-6 (70%)<br><br>
       <svg width="40" height="3" style="margin-right: 8px;"><line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#f44336" stroke-width="3" stroke-dasharray="3,3"/></svg>
-      Days 6+ (40%)
+      Days 6+ (40%)<br><br>
+      <b>🌬️ Winds</b><br>
+      ➤ = Wind direction
     </div>
   `;
 
