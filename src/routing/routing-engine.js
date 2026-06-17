@@ -1,53 +1,77 @@
 /**
- * Sailing Weather Router - Complete Routing Engine
- * Uses vector mathematics for optimal heading calculation
+ * Sailing Weather Router - Professional Isochrone Method
+ * Uses spherical Earth calculations for accurate routing
  */
 
 class RoutingEngine {
   constructor(boatProfile, weatherForecast) {
     this.boat = boatProfile;
-    this.forecast = weatherForecast; // Array of hourly forecasts
+    this.forecast = weatherForecast;
     this.route = [];
     this.waypoints = [];
+    this.isochrones = []; // For visualization
+    this.EARTH_RADIUS = 3440.07; // Nautical miles
   }
 
   /**
-   * Calculate optimal heading using vector mathematics
+   * Haversine distance - accurate on spherical Earth
    */
-  calculateOptimalHeading(currentLat, currentLng, destLat, destLng, windSpeed, windDirection) {
-    // Create destination vector
-    const destVector = Vector2D.fromPoints(currentLat, currentLng, destLat, destLng);
-    const destDirection = destVector.bearing();
+  haversineDistance(lat1, lng1, lat2, lng2) {
+    const toRad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * toRad;
+    const dLng = (lng2 - lng1) * toRad;
 
-    let bestHeading = destDirection;
-    let bestGoodness = -Infinity;
-    let bestSpeed = 0;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
 
-    // Try every degree (0-359)
-    for (let heading = 0; heading < 360; heading++) {
-      // Get boat speed on this heading
-      const boatSpeed = this.getBoatSpeed(windSpeed, windDirection, heading);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return this.EARTH_RADIUS * c;
+  }
 
-      if (boatSpeed < 0.5) continue; // Can't sail
+  /**
+   * Great circle bearing - shortest path on sphere
+   */
+  greatCircleBearing(lat1, lng1, lat2, lng2) {
+    const toRad = Math.PI / 180;
+    const lat1Rad = lat1 * toRad;
+    const lat2Rad = lat2 * toRad;
+    const dLng = (lng2 - lng1) * toRad;
 
-      // Vector for boat motion
-      const boatVector = Vector2D.fromBearing(heading, boatSpeed);
+    const y = Math.sin(dLng) * Math.cos(lat2Rad);
+    const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+      Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
 
-      // Component toward destination
-      const progressVector = boatVector.projectOnto(destVector);
-      const progress = progressVector.magnitude();
+    let bearing = Math.atan2(y, x) * 180 / Math.PI;
+    return (bearing + 360) % 360;
+  }
 
-      // Goodness = progress × speed
-      const goodness = progress * (1 + boatSpeed * 0.1);
+  /**
+   * Project point along bearing and distance (spherical)
+   */
+  projectPoint(lat, lng, bearing, distNM) {
+    const toRad = Math.PI / 180;
+    const toDeg = 180 / Math.PI;
 
-      if (goodness > bestGoodness) {
-        bestGoodness = goodness;
-        bestHeading = heading;
-        bestSpeed = boatSpeed;
-      }
-    }
+    const latRad = lat * toRad;
+    const lngRad = lng * toRad;
+    const bearingRad = bearing * toRad;
+    const angularDist = distNM / this.EARTH_RADIUS;
 
-    return Math.round(bestHeading);
+    const newLatRad = Math.asin(
+      Math.sin(latRad) * Math.cos(angularDist) +
+      Math.cos(latRad) * Math.sin(angularDist) * Math.cos(bearingRad)
+    );
+
+    const newLngRad = lngRad + Math.atan2(
+      Math.sin(bearingRad) * Math.sin(angularDist) * Math.cos(latRad),
+      Math.cos(angularDist) - Math.sin(latRad) * Math.sin(newLatRad)
+    );
+
+    return {
+      lat: newLatRad * toDeg,
+      lng: ((newLngRad * toDeg + 540) % 360) - 180
+    };
   }
 
   /**
@@ -57,13 +81,11 @@ class RoutingEngine {
     let relativeAngle = Math.abs(windDirection - boatHeading);
     if (relativeAngle > 180) relativeAngle = 360 - relativeAngle;
 
-    // Find nearest wind speed
     const windKeys = Object.keys(this.boat.polars).map(Number);
     const nearestWindKey = windKeys.reduce((prev, curr) =>
       Math.abs(curr - windSpeed) < Math.abs(prev - windSpeed) ? curr : prev
     );
 
-    // Find nearest angle
     const angles = Object.keys(this.boat.polars[nearestWindKey]).map(Number);
     const nearestAngle = angles.reduce((prev, curr) =>
       Math.abs(curr - relativeAngle) < Math.abs(prev - relativeAngle) ? curr : prev
@@ -71,7 +93,6 @@ class RoutingEngine {
 
     let speed = this.boat.polars[nearestWindKey][nearestAngle] || 0;
 
-    // Safety limits
     if (speed > this.boat.performance.maxHull) speed = this.boat.performance.maxHull;
     if (windSpeed > this.boat.performance.maxWind) speed = 0;
 
@@ -79,57 +100,28 @@ class RoutingEngine {
   }
 
   /**
-   * Simulate one hour of sailing
-   */
-  simulateHour(lat, lng, heading, speedKnots) {
-    const distance = speedKnots / 60;
-    const headingRad = heading * Math.PI / 180;
-    const latRad = lat * Math.PI / 180;
-
-    const newLatRad = Math.asin(
-      Math.sin(latRad) * Math.cos(distance) +
-      Math.cos(latRad) * Math.sin(distance) * Math.cos(headingRad)
-    );
-    const newLat = newLatRad * 180 / Math.PI;
-
-    const newLngRad = latRad + Math.atan2(
-      Math.sin(headingRad) * Math.sin(distance) * Math.cos(latRad),
-      Math.cos(distance) - Math.sin(latRad) * Math.sin(newLatRad)
-    );
-    const newLng = (newLngRad * 180 / Math.PI + 540) % 360 - 180;
-
-    return { newLat, newLng };
-  }
-
-  /**
-   * Calculate distance between two points (nautical miles)
-   */
-  distance(lat1, lng1, lat2, lng2) {
-    const R = 3440.07;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
-
-  /**
-   * Main route calculation: hour-by-hour simulation
+   * ISOCHRONE METHOD - Professional routing
+   * Finds optimal route by creating time-based reachability zones
    */
   async calculateRoute(startLat, startLng, endLat, endLng) {
-    console.log('\n⛵ Starting hour-by-hour simulation...\n');
+    console.log('\n' + '='.repeat(70));
+    console.log('🌊 ISOCHRONE METHOD - Professional Routing');
+    console.log('Using spherical Earth calculations');
+    console.log('='.repeat(70) + '\n');
 
     this.route = [];
     this.waypoints = [];
+    this.isochrones = [];
 
-    let currentLat = startLat;
-    let currentLng = startLng;
-    let hourIndex = 0;
-    let totalDistance = 0;
+    // Current isochrone (reachable points)
+    let currentIsochrone = [{
+      lat: startLat,
+      lng: startLng,
+      distance: 0,
+      time: 0,
+      parent: null
+    }];
 
-    // Start waypoint
     this.waypoints.push({
       hour: 0,
       day: 0,
@@ -139,107 +131,113 @@ class RoutingEngine {
       label: 'Departure'
     });
 
+    let hourIndex = 0;
     const maxHours = Math.min(this.forecast.length || 168, 168);
-    let lastWaypointHour = 0;
+    let foundDestination = false;
 
-    while (hourIndex < maxHours) {
-      // Check if reached destination
-      const distToEnd = this.distance(currentLat, currentLng, endLat, endLng);
-      if (distToEnd < 0.5) break;
+    console.log('⏱️ Building isochrones hour by hour...\n');
 
-      // Get weather for this hour
+    // Build isochrones hour by hour
+    while (hourIndex < maxHours && !foundDestination) {
       const weather = this.forecast[hourIndex] || {
         windSpeed: 10,
         windDirection: 180
       };
 
-      // Calculate optimal heading (VECTOR-BASED!)
-      const optimalHeading = this.calculateOptimalHeading(
-        currentLat,
-        currentLng,
-        endLat,
-        endLng,
-        weather.windSpeed,
-        weather.windDirection
-      );
+      const nextIsochrone = [];
 
-      // Get boat speed
-      const boatSpeed = this.getBoatSpeed(
-        weather.windSpeed,
-        weather.windDirection,
-        optimalHeading
-      );
+      // For each point in current isochrone
+      for (const point of currentIsochrone) {
+        // Try different headings (every 10 degrees)
+        for (let heading = 0; heading < 360; heading += 10) {
+          const boatSpeed = this.getBoatSpeed(
+            weather.windSpeed,
+            weather.windDirection,
+            heading
+          );
 
-      // Simulate one hour
-      const result = this.simulateHour(
-        currentLat,
-        currentLng,
-        optimalHeading,
-        boatSpeed
-      );
+          if (boatSpeed < 0.5) continue;
 
-      currentLat = result.newLat;
-      currentLng = result.newLng;
-      totalDistance += boatSpeed;
-      hourIndex++;
+          // Project one hour ahead
+          const nextPoint = this.projectPoint(
+            point.lat,
+            point.lng,
+            heading,
+            boatSpeed
+          );
 
-      // Record route point
-      this.route.push({
-        hour: hourIndex,
-        day: Math.floor(hourIndex / 24),
-        lat: currentLat,
-        lng: currentLng,
-        windSpeed: weather.windSpeed,
-        windDir: weather.windDirection,
-        boatSpeed: boatSpeed,
-        heading: optimalHeading,
-        distance: totalDistance
-      });
+          // Calculate distance to destination
+          const distToDest = this.haversineDistance(
+            nextPoint.lat,
+            nextPoint.lng,
+            endLat,
+            endLng
+          );
 
-      // Create waypoints at milestones
-      const hoursSinceLastWaypoint = hourIndex - lastWaypointHour;
+          // Check if reached destination
+          if (distToDest < 0.5) {
+            console.log(`✅ Reached destination in ${hourIndex + 1} hours!\n`);
+            foundDestination = true;
+            
+            // Reconstruct path
+            this.reconstructPath(point, nextPoint, endLat, endLng, hourIndex + 1);
+            break;
+          }
 
-      if (hoursSinceLastWaypoint === 12) {
-        this.waypoints.push({
-          hour: hourIndex,
-          day: Math.floor(hourIndex / 24),
-          lat: currentLat,
-          lng: currentLng,
-          type: 'interim',
-          label: `12h: ${totalDistance.toFixed(0)}nm`
-        });
-      } else if (hoursSinceLastWaypoint === 24) {
-        this.waypoints.push({
-          hour: hourIndex,
-          day: Math.floor(hourIndex / 24),
-          lat: currentLat,
-          lng: currentLng,
-          type: 'daily',
-          label: `Day ${Math.floor(hourIndex / 24)}: ${totalDistance.toFixed(0)}nm`
-        });
-        lastWaypointHour = hourIndex;
+          nextIsochrone.push({
+            lat: nextPoint.lat,
+            lng: nextPoint.lng,
+            distance: point.distance + boatSpeed,
+            time: hourIndex + 1,
+            heading: heading,
+            windSpeed: weather.windSpeed,
+            windDir: weather.windDirection,
+            boatSpeed: boatSpeed,
+            parent: point
+          });
+        }
+
+        if (foundDestination) break;
       }
 
-      // Log daily progress
-      if (hourIndex % 24 === 0) {
-        console.log(`📍 Day ${Math.floor(hourIndex / 24)}: ${totalDistance.toFixed(1)}nm`);
+      // Remove duplicate/interior points (keep only frontier)
+      currentIsochrone = this.pruneDuplicates(nextIsochrone);
+      
+      hourIndex++;
+
+      if (hourIndex % 24 === 0 && !foundDestination) {
+        console.log(`📍 Day ${Math.floor(hourIndex / 24)}: ${currentIsochrone.length} reachable points`);
+      }
+
+      // Safety: limit isochrone size for performance
+      if (currentIsochrone.length > 100) {
+        currentIsochrone = currentIsochrone.slice(0, 100);
       }
     }
 
-    // End waypoint
-    this.waypoints.push({
-      hour: hourIndex,
-      day: Math.floor(hourIndex / 24),
-      lat: currentLat,
-      lng: currentLng,
-      type: 'end',
-      label: `Arrival (${hourIndex}h)`
-    });
+    // Add end waypoint
+    if (foundDestination) {
+      this.waypoints.push({
+        hour: hourIndex,
+        day: Math.floor(hourIndex / 24),
+        lat: endLat,
+        lng: endLng,
+        type: 'end',
+        label: `Arrival (${hourIndex}h)`
+      });
+    }
 
-    console.log(`\n✅ Route Complete:`);
-    console.log(`   Duration: ${hourIndex} hours (${(hourIndex/24).toFixed(1)} days)`);
-    console.log(`   Distance: ${totalDistance.toFixed(1)} nm`);
-    console.log(`   Avg Speed: ${(totalDistance/hourIndex).toFixed(2)} kt\n`);
+    const totalDistance = this.route.length > 0 
+      ? this.route[this.route.length - 1].distance 
+      : 0;
+
+    console.log('='.repeat(70));
+    console.log('✅ ROUTE COMPLETE');
+    console.log('='.repeat(70));
+    console.log(`Duration:    ${hourIndex} hours (${(hourIndex/24).toFixed(1)} days)`);
+    console.log(`Distance:    ${totalDistance.toFixed(1)} nm`);
+    console.log(`Avg Speed:   ${(totalDistance/hourIndex).toFixed(2)} kt`);
+    console.log('='.repeat(70) + '\n');
 
     return {
       route: this.route,
@@ -254,7 +252,56 @@ class RoutingEngine {
   }
 
   /**
-   * Get route segments by confidence level
+   * Reconstruct path from destination back to start
+   */
+  reconstructPath(startPoint, endPoint, finalLat, finalLng, totalHours) {
+    let current = startPoint;
+    
+    while (current !== null) {
+      this.route.unshift({
+        hour: current.time,
+        day: Math.floor(current.time / 24),
+        lat: current.lat,
+        lng: current.lng,
+        windSpeed: current.windSpeed || 0,
+        windDir: current.windDir || 0,
+        boatSpeed: current.boatSpeed || 0,
+        heading: current.heading || 0,
+        distance: current.distance
+      });
+
+      current = current.parent;
+    }
+
+    // Add final point
+    this.route.push({
+      hour: totalHours,
+      day: Math.floor(totalHours / 24),
+      lat: finalLat,
+      lng: finalLng,
+      windSpeed: 0,
+      windDir: 0,
+      boatSpeed: 0,
+      heading: 0,
+      distance: endPoint.distance
+    });
+  }
+
+  /**
+   * Remove duplicate/interior points from isochrone
+   * Keep only frontier points that might lead to optimal route
+   */
+  pruneDuplicates(points) {
+    if (points.length <= 50) return points;
+
+    // Sort by distance to keep best candidates
+    return points
+      .sort((a, b) => b.distance - a.distance)
+      .slice(0, 50);
+  }
+
+  /**
+   * Get route segments by confidence
    */
   getRouteSegments(route) {
     const segments = [];
@@ -275,7 +322,8 @@ class RoutingEngine {
         segments.push({
           points: currentSegment.map(p => [p.lat, p.lng]),
           style: currentStyle,
-          day: currentSegment[0].day
+          day: currentSegment[0].day,
+          data: currentSegment
         });
         currentSegment = [point];
         currentStyle = style;
@@ -288,15 +336,37 @@ class RoutingEngine {
       segments.push({
         points: currentSegment.map(p => [p.lat, p.lng]),
         style: currentStyle,
-        day: currentSegment[0].day
+        day: currentSegment[0].day,
+        data: currentSegment
       });
     }
 
     return segments;
   }
+
+  /**
+   * Get wind vectors for map display
+   */
+  getWindVectors(route, interval = 12) {
+    const winds = [];
+    
+    for (let i = 0; i < route.length; i += interval) {
+      const point = route[i];
+      if (point.windSpeed > 0) {
+        winds.push({
+          lat: point.lat,
+          lng: point.lng,
+          speed: point.windSpeed,
+          direction: point.windDir,
+          hour: point.hour
+        });
+      }
+    }
+
+    return winds;
+  }
 }
 
-// Export
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = RoutingEngine;
 }
